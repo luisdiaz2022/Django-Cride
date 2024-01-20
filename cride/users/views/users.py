@@ -8,6 +8,7 @@ from rest_framework import viewsets, mixins
 
 # Models
 from cride.users.models import User
+from cride.circles.models import Circle
 
 # Permissions
 from rest_framework.permissions import (
@@ -17,6 +18,7 @@ from rest_framework.permissions import (
 from cride.users.permissions import IsAccountOwner
 
 # Serializers
+from cride.circles.serializers import CircleModelSerializer
 from cride.users.serializers import (
     UserLoginSerializer,
     UserModelSerializer,
@@ -74,3 +76,17 @@ class UserViewSet(mixins.RetrieveModelMixin,
         serializer.save()
         data = {'message': 'Congratulations, now go share some rides!'}
         return Response(data, status=status.HTTP_200_OK)
+    
+    def retrieve(self,request, *args, **kwargs):
+        """Add extra data to the response."""
+        response = super(UserViewSet, self).retrieve(request, *args, **kwargs)
+        circle = Circle.objects.filter(
+            members=request.user,
+            membership__is_active=True
+        )
+        data = {
+            'user': response.data,
+            'circle': CircleModelSerializer(circle, many=True).data
+        }
+        response.data = data
+        return response
